@@ -53,9 +53,7 @@ sub describe
 {
     my ( $context, $callback ) = @_;
 
-    my $current_context = $CONTEXT;
-    $current_context .= ' ' unless $current_context eq '';
-    local $CONTEXT = $current_context . $context;
+    local $CONTEXT = _extend_context( $context );
 
     $callback->();
 
@@ -66,9 +64,7 @@ sub it
 {
     my ( $context, $callback ) = @_;
 
-    my $current_context = $CONTEXT;
-    $current_context .= ' ' unless $current_context eq '';
-    local $CONTEXT = $current_context . $context;
+    local $CONTEXT = _extend_context( $context );
 
     if( defined $callback )
     {
@@ -87,14 +83,23 @@ sub xit
 {
     my ( $context, $callback ) = @_;
 
-    my $current_context = $CONTEXT;
-    $current_context .= ' ' unless $current_context eq '';
-    local $CONTEXT = $current_context . $context;
+    local $CONTEXT = _extend_context( $context );
 
     local $TODO = "(disabled)";
     ok( 0, $CONTEXT );
 
     return;
+}
+
+sub _extend_context
+{
+    my ( $context ) = @_;
+
+    my $current_context = $CONTEXT;
+    $current_context .= ' ' if $current_context;
+
+    return $current_context . $context;
+
 }
 
 1;
