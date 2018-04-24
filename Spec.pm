@@ -35,6 +35,7 @@ e.g Test::Class.
 
 use Exporter qw( import );
 use Test::More;
+use Try::Tiny;
 
 our @EXPORT = qw(
     describe
@@ -68,7 +69,15 @@ sub it
 
     if( defined $callback )
     {
-        $callback->();
+        try
+        {
+            $callback->();
+        }
+        catch
+        {
+            my $error = $_;
+            fail( "Test died ($CONTEXT) -- $error" );
+        };
     }
     else
     {
