@@ -18,7 +18,11 @@ e.g Test::Class.
     use TestCase::Spec;
 
     describe 'A kitten' => sub {
-        my $kitten = Kitten->new();
+        my $kitten;
+
+        before 'each' => sub {
+            $kitten = Kitten->new();
+        };
 
         describe 'when stroked' => sub {
             it 'meows' => sub {
@@ -31,29 +35,65 @@ e.g Test::Class.
     # ok 1 - A kitten when stroked meows
     # 1..1
 
+=head1 CAVEATS
+
+To simplify the design of this module, some variations in behaviour from Test::Spec have been taken:
+
+* 'before/after all' will be executed IMMEDIATELY. This means:
+** 'before all' routines MUST be added at the beginning of a 'describe'
+** 'after all' routines MUST be placed at the end of a 'describe'
+
 =cut
 
+use Carp qw( croak );
 use Exporter qw( import );
+use List::Util qw( any );
 use Test::More;
 use Try::Tiny;
 
 our @EXPORT = qw(
+    after
+    before
     describe
     it
     xit
 );
 
-our $CONTEXT = '';
+our $AFTER_EACH  = [];
+our $BEFORE_EACH = [];
+our $CONTEXT     = '';
 
 sub test_name
 {
     return $CONTEXT;
 }
 
+sub after
+{
+    my ( $when, $callback ) = @_;
+
+    my $error = _before_or_after( 'after', $when, $callback );
+    croak $error if $error;
+
+    return;
+}
+
+sub before
+{
+    my ( $when, $callback ) = @_;
+
+    my $error = _before_or_after( 'before', $when, $callback );
+    croak $error if $error;
+
+    return;
+}
+
 sub describe
 {
     my ( $context, $callback ) = @_;
 
+    local $BEFORE_EACH = $BEFORE_EACH;
+    local $AFTER_EACH  = $AFTER_EACH;
     local $CONTEXT = _extend_context( $context );
 
     $callback->();
@@ -71,7 +111,11 @@ sub it
     {
         try
         {
+            $_->() foreach ( @{ $BEFORE_EACH // [] } );
+
             $callback->();
+
+            $_->() foreach ( reverse @{ $AFTER_EACH // [] } );
         }
         catch
         {
@@ -100,6 +144,46 @@ sub xit
     return;
 }
 
+sub _before_or_after
+{
+    my ( $type, $when, $callback ) = @_;
+
+    return "$type must be for either 'each' or 'all'"       unless( defined $when and any { $when eq $_ } qw( each all ) );
+    return "expected subroutine reference as last argument" unless( ref $callback eq 'CODE' );
+
+    if( $when eq 'each' )
+    {
+        if( $type eq 'before' )
+        {
+            $BEFORE_EACH = _extend_before_each( $callback );
+        }
+        else
+        {
+            $AFTER_EACH = _extend_after_each( $callback );
+        }
+    }
+    else
+    {
+        $callback->();
+    }
+
+    return;
+}
+
+sub _extend_after_each
+{
+    my ( $callback ) = @_;
+
+    return _extend_stack( $AFTER_EACH, $callback );
+}
+
+sub _extend_before_each
+{
+    my ( $callback ) = @_;
+
+    return _extend_stack( $BEFORE_EACH, $callback );
+}
+
 sub _extend_context
 {
     my ( $context ) = @_;
@@ -109,6 +193,16 @@ sub _extend_context
 
     return $current_context . $context;
 
+}
+
+sub _extend_stack
+{
+    my ( $stack, $callback ) = @_;
+
+    my @current_tasks = @{ $stack };
+    push @current_tasks, $callback;
+
+    return \@current_tasks;
 }
 
 1;
