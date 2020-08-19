@@ -164,54 +164,26 @@ sub _before_or_after
     {
         if( $type eq 'before' )
         {
-            $BEFORE_EACH = _extend_before_each( $callback );
+            $BEFORE_EACH = _extend_stack( $BEFORE_EACH, $callback );
         }
         else
         {
-            $AFTER_EACH = _extend_after_each( $callback );
+            $AFTER_EACH = _extend_stack( $AFTER_EACH, $callback );
         }
     }
     else
     {
         if( $type eq 'before' )
         {
-            $BEFORE_ALL = _extend_before_all( $callback );
+            $BEFORE_ALL = _extend_stack( $BEFORE_ALL, $callback );
         }
         else
         {
-            $AFTER_ALL = _extend_after_all( $callback );
+            $AFTER_ALL = _extend_stack( $AFTER_ALL, $callback );
         }
     }
 
     return;
-}
-
-sub _extend_after_all
-{
-    my ( $callback ) = @_;
-
-    return _extend_stack( $AFTER_ALL, $callback );
-}
-
-sub _extend_before_all
-{
-    my ( $callback ) = @_;
-
-    return _extend_stack( $BEFORE_ALL, $callback );
-}
-
-sub _extend_after_each
-{
-    my ( $callback ) = @_;
-
-    return _extend_stack( $AFTER_EACH, $callback );
-}
-
-sub _extend_before_each
-{
-    my ( $callback ) = @_;
-
-    return _extend_stack( $BEFORE_EACH, $callback );
 }
 
 sub _extend_context
