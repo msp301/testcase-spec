@@ -62,8 +62,6 @@ our @EXPORT = qw(
     xit
 );
 
-our $AFTER_ALL   = [];
-our $BEFORE_ALL  = [];
 our $AFTER_EACH  = [];
 our $BEFORE_EACH = [];
 our $CONTEXT     = '';
@@ -97,8 +95,6 @@ sub describe
 {
     my ( $context, $callback ) = @_;
 
-    local $BEFORE_ALL  = $BEFORE_ALL;
-    local $AFTER_ALL   = $AFTER_ALL;
     local $BEFORE_EACH = $BEFORE_EACH;
     local $AFTER_EACH  = $AFTER_EACH;
     local $CONTEXT = _extend_context( $context );
@@ -118,13 +114,11 @@ sub it
     {
         try
         {
-            _run_before_stack( $BEFORE_ALL  );
             _run_before_stack( $BEFORE_EACH );
 
             $callback->();
 
             _run_after_stack( $AFTER_EACH );
-            _run_after_stack( $AFTER_ALL  );
         }
         catch
         {
@@ -164,26 +158,33 @@ sub _before_or_after
     {
         if( $type eq 'before' )
         {
-            $BEFORE_EACH = _extend_stack( $BEFORE_EACH, $callback );
+            $BEFORE_EACH = _extend_before_each( $callback );
         }
         else
         {
-            $AFTER_EACH = _extend_stack( $AFTER_EACH, $callback );
+            $AFTER_EACH = _extend_after_each( $callback );
         }
     }
     else
     {
-        if( $type eq 'before' )
-        {
-            $BEFORE_ALL = _extend_stack( $BEFORE_ALL, $callback );
-        }
-        else
-        {
-            $AFTER_ALL = _extend_stack( $AFTER_ALL, $callback );
-        }
+        $callback->();
     }
 
     return;
+}
+
+sub _extend_after_each
+{
+    my ( $callback ) = @_;
+
+    return _extend_stack( $AFTER_EACH, $callback );
+}
+
+sub _extend_before_each
+{
+    my ( $callback ) = @_;
+
+    return _extend_stack( $BEFORE_EACH, $callback );
 }
 
 sub _extend_context
