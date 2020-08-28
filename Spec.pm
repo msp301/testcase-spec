@@ -45,6 +45,9 @@ To simplify the design of this module, some variations in behaviour from Test::S
 
 =cut
 
+use strict;
+use warnings;
+
 use Carp qw( croak );
 use Exporter qw( import );
 use List::Util qw( any );
@@ -59,6 +62,8 @@ our @EXPORT = qw(
     xit
 );
 
+our $AFTER_ALL   = [];
+our $BEFORE_ALL  = [];
 our $AFTER_EACH  = [];
 our $BEFORE_EACH = [];
 our $CONTEXT     = '';
@@ -92,6 +97,8 @@ sub describe
 {
     my ( $context, $callback ) = @_;
 
+    local $BEFORE_ALL  = $BEFORE_ALL;
+    local $AFTER_ALL   = $AFTER_ALL;
     local $BEFORE_EACH = $BEFORE_EACH;
     local $AFTER_EACH  = $AFTER_EACH;
     local $CONTEXT = _extend_context( $context );
@@ -111,11 +118,13 @@ sub it
     {
         try
         {
-            $_->() foreach ( @{ $BEFORE_EACH // [] } );
+            _run_before_stack( $BEFORE_ALL  );
+            _run_before_stack( $BEFORE_EACH );
 
             $callback->();
 
-            $_->() foreach ( reverse @{ $AFTER_EACH // [] } );
+            _run_after_stack( $AFTER_EACH );
+            _run_after_stack( $AFTER_ALL  );
         }
         catch
         {
@@ -164,10 +173,31 @@ sub _before_or_after
     }
     else
     {
-        $callback->();
+        if( $type eq 'before' )
+        {
+            $BEFORE_ALL = _extend_before_all( $callback );
+        }
+        else
+        {
+            $AFTER_ALL = _extend_after_all( $callback );
+        }
     }
 
     return;
+}
+
+sub _extend_after_all
+{
+    my ( $callback ) = @_;
+
+    return _extend_stack( $AFTER_ALL, $callback );
+}
+
+sub _extend_before_all
+{
+    my ( $callback ) = @_;
+
+    return _extend_stack( $BEFORE_ALL, $callback );
 }
 
 sub _extend_after_each
@@ -203,6 +233,30 @@ sub _extend_stack
     push @current_tasks, $callback;
 
     return \@current_tasks;
+}
+
+sub _run_before_stack
+{
+    my ( $stack ) = @_;
+
+    foreach my $callback ( @{ $stack // [] } )
+    {
+        $callback->();
+    };
+
+    return;
+}
+
+sub _run_after_stack
+{
+    my ( $stack ) = @_;
+    
+    foreach my $callback ( reverse @{ $stack // [] } )
+    {
+        $callback->();
+    };
+
+    return;
 }
 
 1;
