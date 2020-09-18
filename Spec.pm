@@ -60,6 +60,7 @@ our @EXPORT = qw(
     describe
     it
     xit
+    test_name
 );
 
 our $AFTER_EACH  = [];
