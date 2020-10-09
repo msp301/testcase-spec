@@ -95,6 +95,9 @@ sub describe
 {
     my ( $context, $callback ) = @_;
 
+    croak "context not provided"                           unless( defined $context and $context ne '' );
+    croak "expected subroutine reference as last argument" unless( ref $callback eq 'CODE' );
+
     local $BEFORE_EACH = $BEFORE_EACH;
     local $AFTER_EACH  = $AFTER_EACH;
     local $CONTEXT = _extend_context( $context );
