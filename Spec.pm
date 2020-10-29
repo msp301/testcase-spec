@@ -48,12 +48,15 @@ To simplify the design of this module, some variations in behaviour from Test::S
 use strict;
 use warnings;
 
+use Test::MockModule;
+
 use Carp qw( croak );
 use Exporter qw( import );
 use List::Util qw( any );
 use Test::More;
 use Try::Tiny;
 
+use TestCase::Spec::Builder;
 use TestCase::Spec::Context;
 
 our @EXPORT = qw(
@@ -67,6 +70,11 @@ our @EXPORT = qw(
 our $AFTER_EACH  = [];
 our $BEFORE_EACH = [];
 our $CONTEXT     = '';
+
+# Hook our custom Test::Builder into Test::More to allow us to automatically name tests
+our $BUILDER        = TestCase::Spec::Builder->new();
+our $HOOK_TEST_MORE = Test::MockModule->new( 'Test::More' );
+$HOOK_TEST_MORE->redefine( builder => sub { $BUILDER } );
 
 sub test_name
 {
