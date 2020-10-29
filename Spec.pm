@@ -54,6 +54,8 @@ use List::Util qw( any );
 use Test::More;
 use Try::Tiny;
 
+use TestCase::Spec::Context;
+
 our @EXPORT = qw(
     after
     before
@@ -113,13 +115,20 @@ sub it
 
     local $CONTEXT = _extend_context( $context );
 
-    if( defined $callback )
+    my $filtered = ( $ENV{ SPEC_FILTER } and index( $CONTEXT, $ENV{ SPEC_FILTER } ) == -1 );
+
+    if( $filtered )
+    {
+        local $TODO = '(filtered)';
+        ok( 1, $CONTEXT );
+    }
+    elsif( defined $callback )
     {
         try
         {
             _run_before_stack( $BEFORE_EACH );
 
-            $callback->();
+            $callback->( TestCase::Spec::Context->new( description => "$CONTEXT" ) );
 
             _run_after_stack( $AFTER_EACH );
         }
