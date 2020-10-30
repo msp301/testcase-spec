@@ -56,7 +56,6 @@ use List::Util qw( any );
 use Test::More;
 use Try::Tiny;
 
-use TestCase::Spec::Builder;
 use TestCase::Spec::Context;
 
 our @EXPORT = qw(
@@ -71,10 +70,8 @@ our $AFTER_EACH  = [];
 our $BEFORE_EACH = [];
 our $CONTEXT     = '';
 
-# Hook our custom Test::Builder into Test::More to allow us to automatically name tests
-our $BUILDER        = TestCase::Spec::Builder->new();
-our $HOOK_TEST_MORE = Test::MockModule->new( 'Test::More' );
-$HOOK_TEST_MORE->redefine( builder => sub { $BUILDER } );
+our $HOOK;
+our $ENTERED = 0;
 
 sub test_name
 {
@@ -112,7 +109,25 @@ sub describe
     local $AFTER_EACH  = $AFTER_EACH;
     local $CONTEXT = _extend_context( $context );
 
+    unless( $ENTERED )
+    {
+        # Hook our custom Test::Builder into Test::More to allow us to automatically name tests
+        $HOOK = Test::MockModule->new( 'Test::Builder' );
+        $HOOK->redefine( ok      => sub { my ( $obj, $test, $name ) = @_; return $HOOK->original( 'ok' )->( $obj, $test, $name || test_name() ) } );
+        $HOOK->redefine( in_todo => sub { return ( $TODO ) ? 1 : 0 } );
+        $HOOK->redefine( todo    => sub { return $TODO } );
+    };
+
+    $ENTERED++;
+
     $callback->();
+
+    $ENTERED--;
+
+    if( $ENTERED == 0 )
+    {
+        $HOOK->unmock_all;
+    }
 
     return;
 }
