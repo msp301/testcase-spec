@@ -114,6 +114,7 @@ sub describe
         # Hook our custom Test::Builder into Test::More to allow us to automatically name tests
         $HOOK = Test::MockModule->new( 'Test::Builder' );
         $HOOK->redefine( ok      => sub { my ( $obj, $test, $name ) = @_; return $HOOK->original( 'ok' )->( $obj, $test, $name || test_name() ) } );
+        $HOOK->redefine( caller  => sub { my ( $obj, $height ) = @_; return $HOOK->original( 'caller' )->( $obj, $height + 2 ); } );
         $HOOK->redefine( in_todo => sub { return ( $TODO ) ? 1 : 0 } );
         $HOOK->redefine( todo    => sub { return $TODO } );
     };
