@@ -43,6 +43,9 @@ To simplify the design of this module, some variations in behaviour from Test::S
 ** 'before all' routines MUST be added at the beginning of a 'describe'
 ** 'after all' routines MUST be placed at the end of a 'describe'
 
+Test::Spec appears to run 'before each' blocks before 'before all' within nested 'describe' blocks.
+The documentation in Test::Spec is not clear that it runs nested blocks in this manner. TestCase::Spec DOES NOT does not match this behaviour.
+
 =cut
 
 use strict;
