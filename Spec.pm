@@ -39,9 +39,8 @@ e.g Test::Class.
 
 To simplify the design of this module, some variations in behaviour from Test::Spec have been taken:
 
-* 'before/after all' will be executed IMMEDIATELY. This means:
+* 'before all' will be executed IMMEDIATELY. This means:
 ** 'before all' routines MUST be added at the beginning of a 'describe'
-** 'after all' routines MUST be placed at the end of a 'describe'
 
 Test::Spec appears to run 'before each' blocks before 'before all' within nested 'describe' blocks.
 The documentation in Test::Spec is not clear that it runs nested blocks in this manner. TestCase::Spec DOES NOT does not match this behaviour.
@@ -69,6 +68,7 @@ our @EXPORT = qw(
     xit
 );
 
+our $AFTER_ALL   = [];
 our $AFTER_EACH  = [];
 our $BEFORE_EACH = [];
 our $CONTEXT     = '';
@@ -110,7 +110,8 @@ sub describe
 
     local $BEFORE_EACH = $BEFORE_EACH;
     local $AFTER_EACH  = $AFTER_EACH;
-    local $CONTEXT = _extend_context( $context );
+    local $AFTER_ALL   = [];
+    local $CONTEXT     = _extend_context( $context );
 
     unless( $ENTERED )
     {
@@ -125,6 +126,8 @@ sub describe
     $ENTERED++;
 
     $callback->();
+
+    _run_after_stack( $AFTER_ALL );
 
     $ENTERED--;
 
@@ -206,7 +209,14 @@ sub _before_or_after
     }
     else
     {
-        $callback->();
+        if( $type eq 'before' )
+        {
+            $callback->();
+        }
+        else
+        {
+            $AFTER_ALL = _extend_stack( $AFTER_ALL, $callback );
+        }
     }
 
     return;
