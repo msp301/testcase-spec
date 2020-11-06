@@ -85,6 +85,8 @@ sub after
 {
     my ( $when, $callback ) = @_;
 
+    croak 'after must be used within a describe block' unless $ENTERED;
+
     my $error = _before_or_after( 'after', $when, $callback );
     croak $error if $error;
 
@@ -94,6 +96,8 @@ sub after
 sub before
 {
     my ( $when, $callback ) = @_;
+
+    croak 'before must be used within a describe block' unless $ENTERED;
 
     my $error = _before_or_after( 'before', $when, $callback );
     croak $error if $error;
