@@ -69,6 +69,8 @@ use Try::Tiny;
 
 use TestCase::Spec::Context;
 
+our $VERSION = 1.00;
+
 our @EXPORT = qw(
     after
     before
