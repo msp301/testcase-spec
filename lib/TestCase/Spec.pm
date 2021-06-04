@@ -123,6 +123,13 @@ sub describe
     croak "context not provided"                           unless( defined $context and $context ne '' );
     croak "expected subroutine reference as last argument" unless( ref $callback eq 'CODE' );
 
+    return _describe( $context, $callback );
+}
+
+sub _describe
+{
+    my ( $context, $callback ) = @_;
+
     local $BEFORE_EACH = $BEFORE_EACH;
     local $AFTER_EACH  = $AFTER_EACH;
     local $AFTER_ALL   = [];
@@ -157,6 +164,11 @@ sub describe
 sub it
 {
     my ( $context, $callback ) = @_;
+
+    unless( $ENTERED )
+    {
+        return _describe( '', sub { it( $context, $callback ) } );
+    }
 
     local $CONTEXT = _extend_context( $context );
 
